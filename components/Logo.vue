@@ -3,12 +3,12 @@
 		<svg class="Logo" viewBox="0 0 1000 1000">
 			<g class="pins">
 				<circle
-					v-for="i in Array(24).keys()"
+					v-for="(pin, i) in pins"
 					:key="i"
 					r="5"
 					fill="#061d5b"
-					:cx="500 + Math.sin((i + 0.5) * 15 / 180 * Math.PI) * 480"
-					:cy="500 + Math.cos((i + 0.5) * 15 / 180 * Math.PI) * 480"
+					:cx="pin.x"
+					:cy="pin.y"
 				/>
 			</g>
 			<g class="bodies">
@@ -35,7 +35,7 @@
 </template>
 
 <script>
-import {Engine, Composite, World, Mouse, MouseConstraint, Bodies, Vector} from 'matter-js';
+import {Engine, Composite, World, Mouse, MouseConstraint, Bodies, Vector, Constraint} from 'matter-js';
 
 const baseSize = 480 * Math.sin(Math.PI / 24) * 2 / (Math.sqrt(3) + 2);
 
@@ -58,6 +58,10 @@ export default {
 	data() {
 		return {
 			bodies: [],
+			pins: Array(24).fill().map((...[, i]) => ({
+				x: 500 + Math.sin((i + 0.5) * 15 / 180 * Math.PI) * 480,
+				y: 500 + Math.cos((i + 0.5) * 15 / 180 * Math.PI) * 480,
+			})),
 		};
 	},
 	async mounted() {
@@ -77,8 +81,24 @@ export default {
 		World.add(this.engine.world, [...pieces, ground, ceil, leftWall, rightWall]);
 
 		this.mouse = Mouse.create(this.$refs.wrap);
-		const mouseConstraint = MouseConstraint.create(this.engine, {mouse: this.mouse});
+		const mouseConstraint = MouseConstraint.create(this.engine, {
+			mouse: this.mouse,
+			constraint: {
+				stiffness: 0.2,
+				render: {
+					visible: false,
+				},
+			},
+		});
 		World.add(this.engine.world, mouseConstraint);
+
+		World.add(this.engine.world, Constraint.create({
+			bodyB: pieces[0],
+			pointA: this.pins[12],
+			pointB: {x: pieceTypes[0].width / 2, y: pieceTypes[0].height / 2},
+			length: 0,
+			stiffness: 1,
+		}));
 
 		Engine.run(this.engine);
 
