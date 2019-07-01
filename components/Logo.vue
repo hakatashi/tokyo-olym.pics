@@ -191,6 +191,21 @@ export default {
 					this.appliedConstraints.set(event.body.id, []);
 				}
 				this.appliedConstraints.get(event.body.id).push(constraint.vertixIndex);
+				if (this.appliedConstraints.get(event.body.id).length >= 2) {
+					const newPiece = event.body.label;
+					World.add(
+						this.engine.world,
+						Bodies.rectangle(
+							Math.random() * 800 + 100,
+							Math.random() * 500 + 200,
+							pieceTypes[newPiece].width,
+							pieceTypes[newPiece].height,
+							{
+								label: newPiece,
+							},
+						),
+					);
+				}
 			}
 			this.constraints = [];
 		},
