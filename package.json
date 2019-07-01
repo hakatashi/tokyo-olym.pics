@@ -14,7 +14,8 @@
     "dev": "nuxt",
     "build": "nuxt build",
     "start": "nuxt start",
-    "generate": "nuxt generate"
+    "generate": "nuxt generate",
+    "deploy": "npm run generate && cd dist && git init && git remote add origin https://github.com/hakatashi/tokyo-olym.pics.git && git fetch origin && git symbolic-ref HEAD refs/remotes/origin/gh-pages && git add . && git commit -m \"Update build\" && git push -u origin HEAD:gh-pages && cd .."
   },
   "dependencies": {
     "@nuxtjs/bulma": "^1.2.1",

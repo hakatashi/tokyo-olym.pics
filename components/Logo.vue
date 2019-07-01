@@ -6,7 +6,7 @@
 					v-for="(pin, i) in pins"
 					:key="i"
 					r="5"
-					fill="#061d5b"
+					fill="#001f62"
 					:cx="pin.x"
 					:cy="pin.y"
 				/>
@@ -17,16 +17,27 @@
 					:key="body.id"
 					class="body"
 					:points="body.vertices.map(({x, y}) => `${x},${y}`).join(' ')"
-					fill="#061d5b"
+					fill="#001f62"
 				/>
 			</g>
+			<transition-group name="pin-constraint" tag="g">
+				<circle
+					v-for="constraint in constraints"
+					:key="[constraint.pointA.x, constraint.pointA.y].join(',')"
+					class="pin-constraint"
+					fill="white"
+					stroke="#001f62"
+					:cx="constraint.pointA.x"
+					:cy="constraint.pointA.y"
+				/>
+			</transition-group>
 			<text
 				class="title"
 				x="500"
 				y="500"
 				text-anchor="middle"
 				font-size="30"
-				fill="#061d5b"
+				fill="#001f62"
 			>
 				tokyo-olym.pics
 			</text>
@@ -35,9 +46,9 @@
 </template>
 
 <script>
-import {Engine, Composite, World, Mouse, MouseConstraint, Bodies, Vector, Constraint} from 'matter-js';
+import {Engine, Events, Composite, World, Mouse, MouseConstraint, Bodies, Vector, Constraint} from 'matter-js';
 
-const baseSize = 480 * Math.sin(Math.PI / 24) * 2 / (Math.sqrt(3) + 2);
+const baseSize = 450 * Math.sin(Math.PI / 24) * 2 / (Math.sqrt(3) + 2);
 
 const pieceTypes = [
 	{
@@ -59,9 +70,10 @@ export default {
 		return {
 			bodies: [],
 			pins: Array(24).fill().map((...[, i]) => ({
-				x: 500 + Math.sin((i + 0.5) * 15 / 180 * Math.PI) * 480,
-				y: 500 + Math.cos((i + 0.5) * 15 / 180 * Math.PI) * 480,
+				x: 500 + Math.sin((i + 0.5) * 15 / 180 * Math.PI) * 450,
+				y: 500 + Math.cos((i + 0.5) * 15 / 180 * Math.PI) * 450,
 			})),
+			constraints: [],
 		};
 	},
 	async mounted() {
@@ -72,7 +84,15 @@ export default {
 		this.engine = Engine.create();
 
 		const pieces = Array(9).fill().map((...[, i]) => (
-			Bodies.rectangle(Math.random() * 800 + 100, Math.random() * 500 + 200, pieceTypes[i % 3].width, pieceTypes[i % 3].height)
+			Bodies.rectangle(
+				Math.random() * 800 + 100,
+				Math.random() * 500 + 200,
+				pieceTypes[i % 3].width,
+				pieceTypes[i % 3].height,
+				{
+					label: i % 3,
+				},
+			)
 		));
 		const ground = Bodies.rectangle(500, 1250, 2000, 500, {isStatic: true});
 		const ceil = Bodies.rectangle(500, -250, 2000, 500, {isStatic: true});
@@ -81,7 +101,7 @@ export default {
 		World.add(this.engine.world, [...pieces, ground, ceil, leftWall, rightWall]);
 
 		this.mouse = Mouse.create(this.$refs.wrap);
-		const mouseConstraint = MouseConstraint.create(this.engine, {
+		this.mouseConstraint = MouseConstraint.create(this.engine, {
 			mouse: this.mouse,
 			constraint: {
 				stiffness: 0.2,
@@ -90,14 +110,15 @@ export default {
 				},
 			},
 		});
-		World.add(this.engine.world, mouseConstraint);
+		Events.on(this.mouseConstraint, 'enddrag', this.onEndDrag);
+		World.add(this.engine.world, this.mouseConstraint);
 
 		World.add(this.engine.world, Constraint.create({
 			bodyB: pieces[0],
 			pointA: this.pins[12],
 			pointB: {x: pieceTypes[0].width / 2, y: pieceTypes[0].height / 2},
 			length: 0,
-			stiffness: 1,
+			stiffness: 0.8,
 		}));
 
 		Engine.run(this.engine);
@@ -105,19 +126,73 @@ export default {
 		this.tickInterval = setInterval(this.onTick, 100);
 		window.addEventListener('resize', this.onWindowResize);
 		this.onWindowResize();
+
+		this.appliedConstraints = new Map();
 	},
 	destroyed() {
 		clearInterval(this.tickInterval);
 		window.removeEventListener('resize', this.onWindowResize);
 	},
 	methods: {
+		getConstraints(body) {
+			let minDistance = Infinity;
+			let minConstraint = null;
+			if (!this.appliedConstraints.has(body.id)) {
+				this.appliedConstraints.set(body.id, []);
+			}
+			for (const [vertixIndex, vertix] of body.vertices.entries()) {
+				if (this.appliedConstraints.get(body.id).includes(vertixIndex)) {
+					continue;
+				}
+
+				for (const pin of this.pins) {
+					const distance = Math.sqrt((vertix.x - pin.x) ** 2 + (vertix.y - pin.y) ** 2);
+					if (minDistance > distance) {
+						minDistance = distance;
+						minConstraint = {
+							bodyB: body,
+							pointA: pin,
+							pointB: {
+								x: vertix.x - body.position.x,
+								y: vertix.y - body.position.y,
+							},
+							vertixIndex,
+						};
+					}
+				}
+			}
+			if (minDistance < 25) {
+				return [minConstraint];
+			}
+			return [];
+		},
 		onTick() {
 			const bodies = Composite.allBodies(this.engine.world);
 			this.bodies = bodies;
+
+			if (this.mouseConstraint.body !== null) {
+				this.constraints = this.getConstraints(this.mouseConstraint.body);
+			}
 		},
 		onWindowResize() {
 			const scale = 1000 / Math.min(window.innerWidth, window.innerHeight);
 			Mouse.setScale(this.mouse, Vector.create(scale, scale));
+		},
+		onEndDrag(event) {
+			const [constraint] = this.getConstraints(event.body);
+			if (constraint !== undefined) {
+				const newConstraint = Constraint.create({
+					...constraint,
+					length: 0,
+					stiffness: 0.8,
+				});
+				World.add(this.engine.world, newConstraint);
+				if (!this.appliedConstraints.has(event.body.id)) {
+					this.appliedConstraints.set(event.body.id, []);
+				}
+				this.appliedConstraints.get(event.body.id).push(constraint.vertixIndex);
+			}
+			this.constraints = [];
 		},
 	},
 };
@@ -139,6 +214,19 @@ export default {
 @keyframes rotate {
 	from { transform: rotate(-480deg); opacity: 0; }
 	to { transform: rotate(0deg); opacity: 1; }
+}
+
+.pin-constraint {
+	r: 8;
+	stroke-width: 5;
+}
+
+.pin-constraint-enter-active, .pin-constraint-leave-active {
+	transition: all 0.1s;
+}
+
+.pin-constraint-enter, .pin-constraint-leave-to {
+	r: 0;
 }
 
 .title {
