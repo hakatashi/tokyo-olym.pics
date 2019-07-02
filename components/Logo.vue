@@ -23,12 +23,12 @@
 			<transition-group name="pin-constraint" tag="g">
 				<circle
 					v-for="constraint in constraints"
-					:key="[constraint.pointA.x, constraint.pointA.y].join(',')"
+					:key="[pins[constraint.pinIndex].x, pins[constraint.pinIndex].y].join(',')"
 					class="pin-constraint"
 					fill="white"
 					stroke="#001f62"
-					:cx="constraint.pointA.x"
-					:cy="constraint.pointA.y"
+					:cx="pins[constraint.pinIndex].x"
+					:cy="pins[constraint.pinIndex].y"
 				/>
 			</transition-group>
 			<text
@@ -58,6 +58,7 @@ import {
 	Vector,
 	World,
 } from 'matter-js';
+import assert from 'assert';
 
 const baseSize = 450 * Math.sin(Math.PI / 24) * 2 / (Math.sqrt(3) + 2);
 
@@ -124,50 +125,93 @@ export default {
 		Events.on(this.mouseConstraint, 'enddrag', this.onEndDrag);
 		World.add(this.engine.world, this.mouseConstraint);
 
-		World.add(this.engine.world, Constraint.create({
-			bodyB: pieces[0],
-			pointA: this.pins[12],
-			pointB: {x: pieceTypes[0].width / 2, y: pieceTypes[0].height / 2},
-			length: 0,
-			stiffness: 0.8,
-		}));
+		this.constrainedVertices = new Map();
+		this.appliedConstraints = new Set();
+
+		this.addConstraint(
+			{
+				type: 'pin',
+				id: 12,
+			},
+			{
+				type: 'body',
+				body: pieces[0],
+				vertixIndex: 0,
+			},
+		);
 
 		Engine.run(this.engine);
 
 		this.tickInterval = setInterval(this.onTick, 100);
 		window.addEventListener('resize', this.onWindowResize);
 		this.onWindowResize();
-
-		this.appliedConstraints = new Map();
 	},
 	destroyed() {
 		clearInterval(this.tickInterval);
 		window.removeEventListener('resize', this.onWindowResize);
 	},
 	methods: {
+		addConstraint(bodyA, bodyB) {
+			if (bodyA.type === 'pin') {
+				assert(bodyB.type === 'body');
+
+				const vertix = bodyB.body.vertices[bodyB.vertixIndex];
+				World.add(this.engine.world, Constraint.create({
+					bodyB: bodyB.body,
+					pointA: this.pins[bodyA.id],
+					pointB: {
+						x: vertix.x - bodyB.body.position.x,
+						y: vertix.y - bodyB.body.position.y,
+					},
+					length: 0,
+					stiffness: 0.8,
+				}));
+
+				if (!this.constrainedVertices.has(bodyB.body.id)) {
+					this.constrainedVertices.set(bodyB.body.id, []);
+				}
+				this.constrainedVertices.get(bodyB.body.id).push(bodyB.vertixIndex);
+
+				if (this.constrainedVertices.get(bodyB.body.id).length >= 2) {
+					const newPiece = bodyB.body.label;
+					World.add(
+						this.engine.world,
+						Bodies.rectangle(
+							Math.random() * 800 + 100,
+							Math.random() * 500 + 200,
+							pieceTypes[newPiece].width,
+							pieceTypes[newPiece].height,
+							{
+								label: newPiece,
+							},
+						),
+					);
+
+					setTimeout(() => {
+						Body.setStatic(bodyB.body, true);
+					}, 500);
+				}
+			}
+		},
 		getConstraints(body) {
 			let minDistance = Infinity;
 			let minConstraint = null;
-			if (!this.appliedConstraints.has(body.id)) {
-				this.appliedConstraints.set(body.id, []);
+			if (!this.constrainedVertices.has(body.id)) {
+				this.constrainedVertices.set(body.id, []);
 			}
-			const constraints = this.appliedConstraints.get(body.id);
+			const constraints = this.constrainedVertices.get(body.id);
 			for (const [vertixIndex, vertix] of body.vertices.entries()) {
 				if (constraints.includes(vertixIndex)) {
 					continue;
 				}
 
-				for (const pin of this.pins) {
+				for (const [pinIndex, pin] of this.pins.entries()) {
 					const distance = Math.sqrt((vertix.x - pin.x) ** 2 + (vertix.y - pin.y) ** 2);
 					if (minDistance > distance) {
 						minDistance = distance;
 						minConstraint = {
-							bodyB: body,
-							pointA: pin,
-							pointB: {
-								x: vertix.x - body.position.x,
-								y: vertix.y - body.position.y,
-							},
+							pinIndex,
+							body,
 							vertixIndex,
 						};
 					}
@@ -196,37 +240,17 @@ export default {
 		onEndDrag(event) {
 			const [constraint] = this.getConstraints(event.body);
 			if (constraint !== undefined) {
-				const newConstraint = Constraint.create({
-					...constraint,
-					length: 0,
-					stiffness: 0.8,
-				});
-				World.add(this.engine.world, newConstraint);
-
-				if (!this.appliedConstraints.has(event.body.id)) {
-					this.appliedConstraints.set(event.body.id, []);
-				}
-				this.appliedConstraints.get(event.body.id).push(constraint.vertixIndex);
-
-				if (this.appliedConstraints.get(event.body.id).length >= 2) {
-					const newPiece = event.body.label;
-					World.add(
-						this.engine.world,
-						Bodies.rectangle(
-							Math.random() * 800 + 100,
-							Math.random() * 500 + 200,
-							pieceTypes[newPiece].width,
-							pieceTypes[newPiece].height,
-							{
-								label: newPiece,
-							},
-						),
-					);
-
-					setTimeout(() => {
-						Body.setStatic(event.body, true);
-					}, 500);
-				}
+				this.addConstraint(
+					{
+						type: 'pin',
+						id: constraint.pinIndex,
+					},
+					{
+						type: 'body',
+						body: constraint.body,
+						vertixIndex: constraint.vertixIndex,
+					},
+				);
 			}
 			this.constraints = [];
 		},
