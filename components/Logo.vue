@@ -13,13 +13,23 @@
 				/>
 			</g>
 			<g class="bodies">
-				<polygon
+				<g
 					v-for="body in bodies"
 					:key="body.id"
 					class="body"
-					:points="body.vertices.map(({x, y}) => `${x},${y}`).join(' ')"
-					fill="#001f62"
-				/>
+				>
+					<polygon
+						:points="body.vertices.map(({x, y}) => `${x},${y}`).join(' ')"
+						fill="#001f62"
+					/>
+					<path
+						v-if="body.isStatic"
+						d="M0-8A8,8,0,0,0-8,0,8,8,0,0,0,0,8,8,8,0,0,0,8,0,8,8,0,0,0,0-8ZM4.53,3,3,4.53l-3-3-3,3L-4.53,3l3-3-3-3L-3-4.53l3,3,3-3L4.53-3l-3,3Z"
+						fill="white"
+						class="remove"
+						:transform="`translate(${body.position.x}, ${body.position.y})`"
+					/>
+				</g>
 			</g>
 			<transition-group name="pin-constraint" tag="g">
 				<circle
@@ -386,6 +396,16 @@ export default {
 
 .body {
 	animation: show 1.5s;
+	cursor: pointer;
+}
+
+.body .remove {
+	opacity: 0;
+	transition: opacity 0.1s;
+}
+
+.body:hover .remove {
+	opacity: 0.8;
 }
 
 @keyframes show {
