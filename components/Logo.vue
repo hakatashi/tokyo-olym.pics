@@ -24,12 +24,12 @@
 			<transition-group name="pin-constraint" tag="g">
 				<circle
 					v-for="constraint in constraintCandidates"
-					:key="[pins[constraint.pinIndex].x, pins[constraint.pinIndex].y].join(',')"
+					:key="[constraint.position.x, constraint.position.y].join(',')"
 					class="pin-constraint"
 					fill="white"
 					stroke="#001f62"
-					:cx="pins[constraint.pinIndex].x"
-					:cy="pins[constraint.pinIndex].y"
+					:cx="constraint.position.x"
+					:cy="constraint.position.y"
 				/>
 			</transition-group>
 			<text
@@ -206,19 +206,25 @@ export default {
 				}
 			}
 		},
-		getConstraints(body) {
+		getConstraintCandidates(body) {
 			let minDistance = Infinity;
 			let minConstraint = null;
 			if (!this.constrainedVertices.has(body.id)) {
 				this.constrainedVertices.set(body.id, []);
 			}
+
 			const constraints = this.constrainedVertices.get(body.id);
+
 			for (const [vertixIndex, vertix] of body.vertices.entries()) {
 				if (constraints.includes(vertixIndex)) {
 					continue;
 				}
 
 				for (const [pinIndex, pin] of this.pins.entries()) {
+					if (this.pinConstraints[pinIndex].length >= 2) {
+						continue;
+					}
+
 					const distance = Math.sqrt((vertix.x - pin.x) ** 2 + (vertix.y - pin.y) ** 2);
 					if (minDistance > distance) {
 						minDistance = distance;
@@ -226,10 +232,12 @@ export default {
 							pinIndex,
 							body,
 							vertixIndex,
+							position: pin,
 						};
 					}
 				}
 			}
+
 			if (
 				(constraints.length === 0 && minDistance < 25) ||
 				(constraints.length === 1 && minDistance < 10)
@@ -243,7 +251,7 @@ export default {
 			this.bodies = bodies;
 
 			if (this.mouseConstraint.body !== null) {
-				this.constraintCandidates = this.getConstraints(this.mouseConstraint.body);
+				this.constraintCandidates = this.getConstraintCandidates(this.mouseConstraint.body);
 			}
 		},
 		onWindowResize() {
@@ -251,7 +259,7 @@ export default {
 			Mouse.setScale(this.mouse, Vector.create(scale, scale));
 		},
 		onEndDrag(event) {
-			const [constraint] = this.getConstraints(event.body);
+			const [constraint] = this.getConstraintCandidates(event.body);
 			if (constraint !== undefined) {
 				this.addConstraint(
 					{
