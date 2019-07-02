@@ -5,7 +5,8 @@
 				<circle
 					v-for="(pin, i) in pins"
 					:key="i"
-					r="5"
+					class="pin"
+					:r="pinConstraints[i].length === 0 ? 5 : 0"
 					fill="#001f62"
 					:cx="pin.x"
 					:cy="pin.y"
@@ -22,7 +23,7 @@
 			</g>
 			<transition-group name="pin-constraint" tag="g">
 				<circle
-					v-for="constraint in constraints"
+					v-for="constraint in constraintCandidates"
 					:key="[pins[constraint.pinIndex].x, pins[constraint.pinIndex].y].join(',')"
 					class="pin-constraint"
 					fill="white"
@@ -85,8 +86,20 @@ export default {
 				x: 500 + Math.sin((i + 0.5) * 15 / 180 * Math.PI) * 450,
 				y: 500 + Math.cos((i + 0.5) * 15 / 180 * Math.PI) * 450,
 			})),
+			constraintCandidates: [],
 			constraints: [],
 		};
+	},
+	computed: {
+		pinConstraints() {
+			const pinConstraints = Array(24).fill().map(() => []);
+			for (const constraint of this.constraints) {
+				if (constraint.bodyA.type === 'pin') {
+					pinConstraints[constraint.bodyA.id].push(constraint);
+				}
+			}
+			return pinConstraints;
+		},
 	},
 	async mounted() {
 		await new Promise((resolve) => {
@@ -95,7 +108,7 @@ export default {
 
 		this.engine = Engine.create();
 
-		const pieces = Array(9).fill().map((...[, i]) => (
+		const pieces = Array(6).fill().map((...[, i]) => (
 			Bodies.rectangle(
 				Math.random() * 800 + 100,
 				Math.random() * 500 + 200,
@@ -126,7 +139,6 @@ export default {
 		World.add(this.engine.world, this.mouseConstraint);
 
 		this.constrainedVertices = new Map();
-		this.appliedConstraints = new Set();
 
 		this.addConstraint(
 			{
@@ -171,6 +183,7 @@ export default {
 					this.constrainedVertices.set(bodyB.body.id, []);
 				}
 				this.constrainedVertices.get(bodyB.body.id).push(bodyB.vertixIndex);
+				this.constraints.push({bodyA, bodyB});
 
 				if (this.constrainedVertices.get(bodyB.body.id).length >= 2) {
 					const newPiece = bodyB.body.label;
@@ -230,7 +243,7 @@ export default {
 			this.bodies = bodies;
 
 			if (this.mouseConstraint.body !== null) {
-				this.constraints = this.getConstraints(this.mouseConstraint.body);
+				this.constraintCandidates = this.getConstraints(this.mouseConstraint.body);
 			}
 		},
 		onWindowResize() {
@@ -252,7 +265,7 @@ export default {
 					},
 				);
 			}
-			this.constraints = [];
+			this.constraintCandidates = [];
 		},
 	},
 };
@@ -274,6 +287,10 @@ export default {
 @keyframes rotate {
 	from { transform: rotate(-480deg); opacity: 0; }
 	to { transform: rotate(0deg); opacity: 1; }
+}
+
+.pin {
+	transition: r 0.1s;
 }
 
 .pin-constraint {
