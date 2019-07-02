@@ -369,28 +369,18 @@ export default {
 
 .title {
 	letter-spacing: 0.15em;
-	animation: bring-up 3s 2s ease-in-out both;
+	animation: bring-up 1.5s 2s cubic-bezier(.16, .5, .5, 1) both;
+	font-weight: bold;
 }
 
 @keyframes bring-up {
 	from {
 		transform: translateY(100px);
 		opacity: 0;
-		animation-timing-function: ease-out;
-	}
-	30% {
-		transform: translateY(10px);
-		opacity: 1;
-		animation-timing-function: linear;
-	}
-	70% {
-		transform: translateY(-10px);
-		opacity: 1;
-		animation-timing-function: ease-in;
 	}
 	to {
-		transform: translateY(-100px);
-		opacity: 0;
+		transform: translateY(0);
+		opacity: 1;
 	}
 }
 
