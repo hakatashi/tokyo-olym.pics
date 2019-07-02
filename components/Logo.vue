@@ -61,7 +61,7 @@ import {
 } from 'matter-js';
 import assert from 'assert';
 
-const baseSize = 450 * Math.sin(Math.PI / 24) * 2 / (Math.sqrt(3) + 2);
+const baseSize = 450 * Math.sin(Math.PI / 24) * 2 / (Math.sqrt(3) + 2 + Math.sqrt(2) + Math.sqrt(6)) * 2;
 
 const pieceTypes = [
 	{
@@ -139,6 +139,7 @@ export default {
 		World.add(this.engine.world, this.mouseConstraint);
 
 		this.constrainedVertices = new Map();
+		this.pieces = new Set(pieces);
 
 		this.addConstraint(
 			{
@@ -183,27 +184,53 @@ export default {
 					this.constrainedVertices.set(bodyB.body.id, []);
 				}
 				this.constrainedVertices.get(bodyB.body.id).push(bodyB.vertixIndex);
-				this.constraints.push({bodyA, bodyB});
+			} else if (bodyA.type === 'body') {
+				assert(bodyB.type === 'body');
 
-				if (this.constrainedVertices.get(bodyB.body.id).length >= 2) {
-					const newPiece = bodyB.body.label;
-					World.add(
-						this.engine.world,
-						Bodies.rectangle(
-							Math.random() * 800 + 100,
-							Math.random() * 500 + 200,
-							pieceTypes[newPiece].width,
-							pieceTypes[newPiece].height,
-							{
-								label: newPiece,
-							},
-						),
-					);
+				const vertixA = bodyA.body.vertices[bodyA.vertixIndex];
+				const vertixB = bodyB.body.vertices[bodyB.vertixIndex];
+				World.add(this.engine.world, Constraint.create({
+					bodyA: bodyA.body,
+					bodyB: bodyB.body,
+					pointA: {
+						x: vertixA.x - bodyA.body.position.x,
+						y: vertixA.y - bodyA.body.position.y,
+					},
+					pointB: {
+						x: vertixB.x - bodyB.body.position.x,
+						y: vertixB.y - bodyB.body.position.y,
+					},
+					length: 0,
+					stiffness: 0.8,
+				}));
 
-					setTimeout(() => {
-						Body.setStatic(bodyB.body, true);
-					}, 500);
+				for (const {body, vertixIndex} of [bodyA, bodyB]) {
+					if (!this.constrainedVertices.has(body.id)) {
+						this.constrainedVertices.set(body.id, []);
+					}
+					this.constrainedVertices.get(body.id).push(vertixIndex);
 				}
+			}
+
+			this.constraints.push({bodyA, bodyB});
+
+			if (this.constrainedVertices.get(bodyB.body.id).length >= 2) {
+				const newPiece = bodyB.body.label;
+				const piece = Bodies.rectangle(
+					Math.random() * 800 + 100,
+					Math.random() * 500 + 200,
+					pieceTypes[newPiece].width,
+					pieceTypes[newPiece].height,
+					{
+						label: newPiece,
+					},
+				);
+				World.add(this.engine.world, piece);
+				this.pieces.add(piece);
+
+				setTimeout(() => {
+					Body.setStatic(bodyB.body, true);
+				}, 500);
 			}
 		},
 		getConstraintCandidates(body) {
@@ -229,11 +256,47 @@ export default {
 					if (minDistance > distance) {
 						minDistance = distance;
 						minConstraint = {
-							pinIndex,
-							body,
-							vertixIndex,
+							bodyA: {
+								type: 'pin',
+								id: pinIndex,
+							},
+							bodyB: {
+								type: 'body',
+								body,
+								vertixIndex,
+							},
 							position: pin,
 						};
+					}
+				}
+
+				for (const piece of this.pieces) {
+					if (piece.id === body.id || !piece.isStatic) {
+						continue;
+					}
+
+					const constrainedVertices = this.constrainedVertices.get(piece.id);
+					for (const [pieceVertixIndex, pieceVertix] of piece.vertices.entries()) {
+						if (constrainedVertices.includes(pieceVertixIndex)) {
+							continue;
+						}
+						const distance = Math.sqrt((vertix.x - pieceVertix.x) ** 2 + (vertix.y - pieceVertix.y) ** 2);
+						if (minDistance > distance) {
+							minDistance = distance;
+							minConstraint = {
+								bodyA: {
+									type: 'body',
+									body: piece,
+									vertixIndex: pieceVertixIndex,
+								},
+								bodyB: {
+									type: 'body',
+									body,
+									vertixIndex,
+								},
+								position: pieceVertix,
+							};
+						}
 					}
 				}
 			}
@@ -261,17 +324,7 @@ export default {
 		onEndDrag(event) {
 			const [constraint] = this.getConstraintCandidates(event.body);
 			if (constraint !== undefined) {
-				this.addConstraint(
-					{
-						type: 'pin',
-						id: constraint.pinIndex,
-					},
-					{
-						type: 'body',
-						body: constraint.body,
-						vertixIndex: constraint.vertixIndex,
-					},
-				);
+				this.addConstraint(constraint.bodyA, constraint.bodyB);
 			}
 			this.constraintCandidates = [];
 		},
