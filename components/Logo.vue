@@ -46,7 +46,18 @@
 </template>
 
 <script>
-import {Engine, Events, Composite, World, Mouse, MouseConstraint, Bodies, Vector, Constraint} from 'matter-js';
+import {
+	Bodies,
+	Body,
+	Composite,
+	Constraint,
+	Engine,
+	Events,
+	Mouse,
+	MouseConstraint,
+	Vector,
+	World,
+} from 'matter-js';
 
 const baseSize = 450 * Math.sin(Math.PI / 24) * 2 / (Math.sqrt(3) + 2);
 
@@ -140,8 +151,9 @@ export default {
 			if (!this.appliedConstraints.has(body.id)) {
 				this.appliedConstraints.set(body.id, []);
 			}
+			const constraints = this.appliedConstraints.get(body.id);
 			for (const [vertixIndex, vertix] of body.vertices.entries()) {
-				if (this.appliedConstraints.get(body.id).includes(vertixIndex)) {
+				if (constraints.includes(vertixIndex)) {
 					continue;
 				}
 
@@ -161,7 +173,10 @@ export default {
 					}
 				}
 			}
-			if (minDistance < 25) {
+			if (
+				(constraints.length === 0 && minDistance < 25) ||
+				(constraints.length === 1 && minDistance < 10)
+			) {
 				return [minConstraint];
 			}
 			return [];
@@ -187,10 +202,12 @@ export default {
 					stiffness: 0.8,
 				});
 				World.add(this.engine.world, newConstraint);
+
 				if (!this.appliedConstraints.has(event.body.id)) {
 					this.appliedConstraints.set(event.body.id, []);
 				}
 				this.appliedConstraints.get(event.body.id).push(constraint.vertixIndex);
+
 				if (this.appliedConstraints.get(event.body.id).length >= 2) {
 					const newPiece = event.body.label;
 					World.add(
@@ -205,6 +222,10 @@ export default {
 							},
 						),
 					);
+
+					setTimeout(() => {
+						Body.setStatic(event.body, true);
+					}, 500);
 				}
 			}
 			this.constraints = [];
