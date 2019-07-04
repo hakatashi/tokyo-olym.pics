@@ -67,21 +67,26 @@
 							rel="nofollow"
 						>@hakatashi</a>
 					</p>
+					<hr>
 					<p>
-						tokyo-olym.picsは四角形を動かしたりくっつけたりすることができるページです。<br>
+						<strong>tokyo-olym.pics</strong>は四角形を動かしたり<br>
+						くっつけたりすることができるウェブサイトです。<br>
 						四角形を動かしたりくっつけたりして遊びましょう。
 					</p>
 					<p>
-						※本サイトは実在の人物、団体、および国際的な総合スポーツ大会とは一切関係ありません。
+						※本サイトは実在の人物、団体、および<br>
+						国際的な総合スポーツ大会とは一切関係ありません。
 					</p>
 					<hr>
 					<p>
-						tokyo-olym.pics is the website in which you can drag and glue the rectangles.<br>
-						So let's drag and glue the rectngles.
+						<strong>tokyo-olym.pics</strong> is the website in which<br>
+						you can drag and glue the rectangles.<br>
+						So let's drag and glue the rectangles.
 					</p>
 					<p>
-						* This website is fictitious. Any similarity to actual persons,
-						entity, or an international sports event is unintentional.
+						* This website is fictitious.<br>
+						Any similarity to actual persons, entity,<br>
+						or an international sports event is unintentional.
 					</p>
 				</div>
 			</transition>
@@ -157,8 +162,8 @@ export default {
 
 		const pieces = Array(6).fill().map((...[, i]) => (
 			Bodies.rectangle(
-				Math.random() * 800 + 100,
-				Math.random() * 500 + 200,
+				i === 0 ? this.pins[14].x : Math.random() * 800 + 100,
+				i === 0 ? this.pins[14].y : Math.random() * 500 + 200,
 				pieceTypes[i % 3].width,
 				pieceTypes[i % 3].height,
 				{
@@ -597,7 +602,7 @@ export default {
 .modal-body {
 	width: 50rem;
 	height: 50rem;
-	padding: 2rem;
+	padding: 5vmin;
 	max-width: 100%;
 	max-height: 100%;
 
@@ -605,7 +610,7 @@ export default {
 	background: white;
 
 	color: #001f62;
-	font-size: 2.5vmin;
+	font-size: 3vmin;
 
 	pointer-events: initial;
 	cursor: pointer;
@@ -632,12 +637,13 @@ export default {
 
 .modal-body .title {
 	font-size: 6vmin;
-	letter-spacing: 0.15em;
+	letter-spacing: 0.1em;
 	font-weight: bold;
 }
 
 .modal-body .subtitle {
 	font-size: 3vmin;
+	text-align: center;
 }
 
 .modal-body .subtitle a {
@@ -647,7 +653,7 @@ export default {
 }
 
 .modal-body p {
-	display: inline-block;
+	width: 100%;
 	text-align: left;
 }
 </style>
