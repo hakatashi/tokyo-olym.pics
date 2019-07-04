@@ -45,21 +45,44 @@
 			</transition-group>
 		</svg>
 		<div class="overlay">
-			<h1 class="title">tokyo-olym.pics</h1>
+			<h1 class="main-title">tokyo-olym.pics</h1>
 			<p class="links">
 				<button class="link" @click="isModal = true">About</button>
-				<button class="link" @click="isModal = true">GitHub</button>
+				<a
+					class="link"
+					href="https://github.com/hakatashi/tokyo-olym.pics"
+					target="_blank"
+					rel="nofollow"
+				>GitHub</a>
 			</p>
 		</div>
-		<div class="modal-wrap">
+		<div class="modal-wrap" @click="isModal = false">
 			<transition name="modal">
 				<div v-if="isModal" class="modal-body">
-					by <a
-						class="link"
-						href="https://github.com/hakatashi"
-						target="_blank"
-						rel="nofollow"
-					>@hakatashi</a>
+					<h1 class="title">tokyo-olym.pics</h1>
+					<p class="subtitle">
+						by <a
+							href="https://github.com/hakatashi"
+							target="_blank"
+							rel="nofollow"
+						>@hakatashi</a>
+					</p>
+					<p>
+						tokyo-olym.picsは四角形を動かしたりくっつけたりすることができるページです。<br>
+						四角形を動かしたりくっつけたりして遊びましょう。
+					</p>
+					<p>
+						※本サイトは実在の人物、団体、および国際的な総合スポーツ大会とは一切関係ありません。
+					</p>
+					<hr>
+					<p>
+						tokyo-olym.pics is the website in which you can drag and glue the rectangles.<br>
+						So let's drag and glue the rectngles.
+					</p>
+					<p>
+						* This website is fictitious. Any similarity to actual persons,
+						entity, or an international sports event is unintentional.
+					</p>
 				</div>
 			</transition>
 		</div>
@@ -382,14 +405,16 @@ export default {
 			}
 
 			World.remove(this.engine.world, body);
-			this.constraints = this.constraints.filter((constraint) => {
+			const constraintRemovals = [];
+			for (const [index, constraint] of this.constraints.entries()) {
 				if (constraint.bodyA.type === 'body' && constraint.bodyA.body.id === body.id) {
 					World.remove(this.engine.world, constraint.constraint);
 					this.constrainedVertices.get(constraint.bodyA.body.id).delete(constraint.bodyA.vertixIndex);
 					if (constraint.bodyB.type === 'body') {
 						this.constrainedVertices.get(constraint.bodyB.body.id).delete(constraint.bodyB.vertixIndex);
 					}
-					return false;
+					constraintRemovals.push(index);
+					continue;
 				}
 				if (constraint.bodyB.type === 'body' && constraint.bodyB.body.id === body.id) {
 					World.remove(this.engine.world, constraint.constraint);
@@ -397,10 +422,15 @@ export default {
 						this.constrainedVertices.get(constraint.bodyA.body.id).delete(constraint.bodyA.vertixIndex);
 					}
 					this.constrainedVertices.get(constraint.bodyB.body.id).delete(constraint.bodyB.vertixIndex);
-					return false;
+					constraintRemovals.push(index);
+					continue;
 				}
-				return true;
-			});
+			}
+
+			constraintRemovals.sort((a, b) => b - a);
+			for (const removal of constraintRemovals) {
+				this.constraints.splice(removal, 1);
+			}
 
 			this.pieces.delete(body);
 			const pieceRemovals = [];
@@ -509,7 +539,7 @@ export default {
 	pointer-events: none;
 }
 
-.title {
+.main-title {
 	letter-spacing: 0.15em;
 	animation: bring-up 1.5s 2s cubic-bezier(.16, .5, .5, 1) both;
 	color: #001f62;
@@ -546,6 +576,7 @@ export default {
 
 	pointer-events: initial;
 	cursor: pointer;
+	text-decoration: none;
 }
 
 .modal-wrap {
@@ -556,5 +587,67 @@ export default {
 	bottom: 0;
 
 	pointer-events: none;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+
+	overflow: hidden;
+}
+
+.modal-body {
+	width: 50rem;
+	height: 50rem;
+	padding: 2rem;
+	max-width: 100%;
+	max-height: 100%;
+
+	border: 2px solid #001f62;
+	background: white;
+
+	color: #001f62;
+	font-size: 2.5vmin;
+
+	pointer-events: initial;
+	cursor: pointer;
+	transform: translate(0);
+
+	display: flex;
+	flex-direction: column;
+
+	justify-content: space-around;
+	align-items: center;
+}
+
+.modal-enter-active, .modal-leave-active {
+	transition: transform 0.5s;
+}
+
+.modal-enter {
+	transform: translateY(100vh);
+}
+
+.modal-leave-to {
+	transform: translateY(-100vh);
+}
+
+.modal-body .title {
+	font-size: 6vmin;
+	letter-spacing: 0.15em;
+	font-weight: bold;
+}
+
+.modal-body .subtitle {
+	font-size: 3vmin;
+}
+
+.modal-body .subtitle a {
+	font-weight: bold;
+	color: inherit;
+	text-decoration: none;
+}
+
+.modal-body p {
+	display: inline-block;
+	text-align: left;
 }
 </style>
