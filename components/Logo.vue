@@ -80,7 +80,9 @@ import {
 	World,
 } from 'matter-js';
 import assert from 'assert';
-import minBy from 'lodash/minBy';
+import minBy from 'lodash/minBy.js';
+
+import getFartherestPoint from '~/components/utils/getFartherestPoint.js';
 
 const baseSize = 450 * Math.sin(Math.PI / 24) * 2 / (Math.sqrt(3) + 2 + Math.sqrt(2) + Math.sqrt(6)) * 2;
 
@@ -242,9 +244,22 @@ export default {
 
 			if (this.constrainedVertices.get(bodyB.body.id).size >= 2) {
 				const newPiece = bodyB.body.label;
+				const newPoint = getFartherestPoint(
+					[
+						...Array.from(this.pieces).map(({position}) => [position.x, position.y]),
+						[0, 0],
+						[0, 1000],
+						[1000, 1000],
+						[1000, 0],
+					],
+					{
+						width: 1000,
+						height: 1000,
+					},
+				);
 				const piece = Bodies.rectangle(
-					Math.random() * 800 + 100,
-					Math.random() * 500 + 200,
+					newPoint.x,
+					newPoint.y,
 					pieceTypes[newPiece].width,
 					pieceTypes[newPiece].height,
 					{

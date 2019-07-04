@@ -22,7 +22,8 @@
     "@nuxtjs/pwa": "^2.6.0",
     "lodash": "^4.17.11",
     "matter-js": "^0.14.2",
-    "nuxt": "^2.0.0"
+    "nuxt": "^2.0.0",
+    "voronoi-diagram": "^1.0.1"
   },
   "devDependencies": {
     "@hakatashi/eslint-config": "^1.9.0",
