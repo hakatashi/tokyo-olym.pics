@@ -6,7 +6,7 @@
 					v-for="(pin, i) in pins"
 					:key="i"
 					class="pin"
-					:r="pinConstraints[i].length === 0 ? 5 : 0"
+					:r="(alwaysShowPins || pinConstraints[i].length === 0) ? 5 : 0"
 					fill="#001f62"
 					:cx="pin.x"
 					:cy="pin.y"
@@ -140,6 +140,7 @@ export default {
 			constraintCandidates: [],
 			constraints: [],
 			isModal: false,
+			alwaysShowPins: true,
 		};
 	},
 	computed: {
@@ -157,6 +158,10 @@ export default {
 		await new Promise((resolve) => {
 			setTimeout(resolve, 2000);
 		});
+
+		setTimeout(() => {
+			this.alwaysShowPins = false;
+		}, 1500);
 
 		this.engine = Engine.create();
 
@@ -549,6 +554,7 @@ export default {
 	animation: bring-up 1.5s 2s cubic-bezier(.16, .5, .5, 1) both;
 	color: #001f62;
 	font-weight: bold;
+	font-size: 3.5vmin;
 }
 
 .links {
