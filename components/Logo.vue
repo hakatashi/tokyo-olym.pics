@@ -17,6 +17,7 @@
 					v-for="body in bodies"
 					:key="body.id"
 					class="body"
+					@click="onClickBody(body)"
 				>
 					<polygon
 						:points="body.vertices.map(({x, y}) => `${x},${y}`).join(' ')"
@@ -154,7 +155,7 @@ export default {
 		this.addConstraint(
 			{
 				type: 'pin',
-				id: 12,
+				id: 14,
 			},
 			{
 				type: 'body',
@@ -179,7 +180,7 @@ export default {
 				assert(bodyB.type === 'body');
 
 				const vertix = bodyB.body.vertices[bodyB.vertixIndex];
-				World.add(this.engine.world, Constraint.create({
+				const constraint = Constraint.create({
 					bodyB: bodyB.body,
 					pointA: this.pins[bodyA.id],
 					pointB: {
@@ -188,18 +189,21 @@ export default {
 					},
 					length: 0,
 					stiffness: 0.8,
-				}));
+				});
+				World.add(this.engine.world, constraint);
 
 				if (!this.constrainedVertices.has(bodyB.body.id)) {
-					this.constrainedVertices.set(bodyB.body.id, []);
+					this.constrainedVertices.set(bodyB.body.id, new Set());
 				}
-				this.constrainedVertices.get(bodyB.body.id).push(bodyB.vertixIndex);
+				this.constrainedVertices.get(bodyB.body.id).add(bodyB.vertixIndex);
+
+				this.constraints.push({bodyA, bodyB, constraint});
 			} else if (bodyA.type === 'body') {
 				assert(bodyB.type === 'body');
 
 				const vertixA = bodyA.body.vertices[bodyA.vertixIndex];
 				const vertixB = bodyB.body.vertices[bodyB.vertixIndex];
-				World.add(this.engine.world, Constraint.create({
+				const constraint = Constraint.create({
 					bodyA: bodyA.body,
 					bodyB: bodyB.body,
 					pointA: {
@@ -212,19 +216,20 @@ export default {
 					},
 					length: 0,
 					stiffness: 0.8,
-				}));
+				});
+				World.add(this.engine.world, constraint);
 
 				for (const {body, vertixIndex} of [bodyA, bodyB]) {
 					if (!this.constrainedVertices.has(body.id)) {
-						this.constrainedVertices.set(body.id, []);
+						this.constrainedVertices.set(body.id, new Set());
 					}
-					this.constrainedVertices.get(body.id).push(vertixIndex);
+					this.constrainedVertices.get(body.id).add(vertixIndex);
 				}
+
+				this.constraints.push({bodyA, bodyB, constraint});
 			}
 
-			this.constraints.push({bodyA, bodyB});
-
-			if (this.constrainedVertices.get(bodyB.body.id).length >= 2) {
+			if (this.constrainedVertices.get(bodyB.body.id).size >= 2) {
 				const newPiece = bodyB.body.label;
 				const piece = Bodies.rectangle(
 					Math.random() * 800 + 100,
@@ -247,18 +252,18 @@ export default {
 			let minDistance = Infinity;
 			let minConstraint = null;
 			if (!this.constrainedVertices.has(body.id)) {
-				this.constrainedVertices.set(body.id, []);
+				this.constrainedVertices.set(body.id, new Set());
 			}
 
 			const constraints = this.constrainedVertices.get(body.id);
 
 			for (const [vertixIndex, vertix] of body.vertices.entries()) {
-				if (constraints.includes(vertixIndex)) {
+				if (constraints.has(vertixIndex)) {
 					continue;
 				}
 
 				for (const [pinIndex, pin] of this.pins.entries()) {
-					if (this.pinConstraints[pinIndex].length >= 2) {
+					if (this.pinConstraints[pinIndex].length >= 1) {
 						continue;
 					}
 
@@ -287,7 +292,7 @@ export default {
 
 					const constrainedVertices = this.constrainedVertices.get(piece.id);
 					for (const [pieceVertixIndex, pieceVertix] of piece.vertices.entries()) {
-						if (constrainedVertices.includes(pieceVertixIndex)) {
+						if (constrainedVertices.has(pieceVertixIndex)) {
 							continue;
 						}
 						const distance = Math.sqrt((vertix.x - pieceVertix.x) ** 2 + (vertix.y - pieceVertix.y) ** 2);
@@ -312,8 +317,8 @@ export default {
 			}
 
 			if (
-				(constraints.length === 0 && minDistance < 25) ||
-				(constraints.length === 1 && minDistance < 10)
+				(constraints.size === 0 && minDistance < 25) ||
+				(constraints.size === 1 && minDistance < 10)
 			) {
 				return [minConstraint];
 			}
@@ -332,11 +337,51 @@ export default {
 			Mouse.setScale(this.mouse, Vector.create(scale, scale));
 		},
 		onEndDrag(event) {
+			if (!this.pieces.has(event.body)) {
+				return;
+			}
 			const [constraint] = this.getConstraintCandidates(event.body);
 			if (constraint !== undefined) {
 				this.addConstraint(constraint.bodyA, constraint.bodyB);
 			}
 			this.constraintCandidates = [];
+		},
+		onClickBody(body) {
+			if (!body.isStatic) {
+				return;
+			}
+
+			World.remove(this.engine.world, body);
+			this.constraints = this.constraints.filter((constraint) => {
+				if (constraint.bodyA.type === 'body' && constraint.bodyA.body.id === body.id) {
+					World.remove(this.engine.world, constraint.constraint);
+					this.constrainedVertices.get(constraint.bodyA.body.id).delete(constraint.bodyA.vertixIndex);
+					if (constraint.bodyB.type === 'body') {
+						this.constrainedVertices.get(constraint.bodyB.body.id).delete(constraint.bodyB.vertixIndex);
+					}
+					return false;
+				}
+				if (constraint.bodyB.type === 'body' && constraint.bodyB.body.id === body.id) {
+					World.remove(this.engine.world, constraint.constraint);
+					if (constraint.bodyA.type === 'body') {
+						this.constrainedVertices.get(constraint.bodyA.body.id).delete(constraint.bodyA.vertixIndex);
+					}
+					this.constrainedVertices.get(constraint.bodyB.body.id).delete(constraint.bodyB.vertixIndex);
+					return false;
+				}
+				return true;
+			});
+
+			this.pieces.delete(body);
+
+			for (const piece of this.pieces) {
+				const vertices = this.constrainedVertices.get(piece.id);
+				if (piece.isStatic && vertices.size <= 1) {
+					Body.setStatic(piece, false);
+				} else if (!piece.isStatic && vertices.size <= 1) {
+					Body.setStatic(piece, false);
+				}
+			}
 		},
 	},
 };
