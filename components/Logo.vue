@@ -43,17 +43,26 @@
 					:cy="constraint.position.y"
 				/>
 			</transition-group>
-			<text
-				class="title"
-				x="500"
-				y="500"
-				text-anchor="middle"
-				font-size="30"
-				fill="#001f62"
-			>
-				tokyo-olym.pics
-			</text>
 		</svg>
+		<div class="overlay">
+			<h1 class="title">tokyo-olym.pics</h1>
+			<p class="links">
+				<button class="link" @click="isModal = true">About</button>
+				<button class="link" @click="isModal = true">GitHub</button>
+			</p>
+		</div>
+		<div class="modal-wrap">
+			<transition name="modal">
+				<div v-if="isModal" class="modal-body">
+					by <a
+						class="link"
+						href="https://github.com/hakatashi"
+						target="_blank"
+						rel="nofollow"
+					>@hakatashi</a>
+				</div>
+			</transition>
+		</div>
 	</div>
 </template>
 
@@ -70,8 +79,8 @@ import {
 	Vector,
 	World,
 } from 'matter-js';
-import {minBy} from 'lodash';
 import assert from 'assert';
+import minBy from 'lodash/minBy';
 
 const baseSize = 450 * Math.sin(Math.PI / 24) * 2 / (Math.sqrt(3) + 2 + Math.sqrt(2) + Math.sqrt(6)) * 2;
 
@@ -100,6 +109,7 @@ export default {
 			})),
 			constraintCandidates: [],
 			constraints: [],
+			isModal: false,
 		};
 	},
 	computed: {
@@ -421,6 +431,7 @@ export default {
 	height: 100vmin;
 	font-family: 'Quicksand', 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	user-select: none;
+	position: relative;
 }
 
 .pins {
@@ -450,23 +461,6 @@ export default {
 	r: 0;
 }
 
-.title {
-	letter-spacing: 0.15em;
-	animation: bring-up 1.5s 2s cubic-bezier(.16, .5, .5, 1) both;
-	font-weight: bold;
-}
-
-@keyframes bring-up {
-	from {
-		transform: translateY(100px);
-		opacity: 0;
-	}
-	to {
-		transform: translateY(0);
-		opacity: 1;
-	}
-}
-
 .body {
 	animation: show 1.5s;
 	cursor: pointer;
@@ -484,5 +478,68 @@ export default {
 @keyframes show {
 	from { opacity: 0; }
 	to { opacity: 1; }
+}
+
+.overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	pointer-events: none;
+}
+
+.title {
+	letter-spacing: 0.15em;
+	animation: bring-up 1.5s 2s cubic-bezier(.16, .5, .5, 1) both;
+	color: #001f62;
+	font-weight: bold;
+}
+
+.links {
+	animation: bring-up 1.5s 2.5s cubic-bezier(.16, .5, .5, 1) both;
+}
+
+@keyframes bring-up {
+	from {
+		transform: translateY(100px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+.link {
+	margin-top: 0.5rem;
+	padding: 0.3rem 1rem;
+	outline: none;
+	border: none;
+	border-radius: 5px;
+	background-color: transparent;
+
+	color: #001f62;
+	font-weight: bold;
+	font-size: 1rem;
+	opacity: 0.7;
+
+	pointer-events: initial;
+	cursor: pointer;
+}
+
+.modal-wrap {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+
+	pointer-events: none;
 }
 </style>
