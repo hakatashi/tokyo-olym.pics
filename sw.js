@@ -2,24 +2,24 @@ importScripts('/_nuxt/workbox.4c4f5ca6.js')
 
 workbox.precaching.precacheAndRoute([
   {
-    "url": "/_nuxt/5a23150aa98ff4f76e4b.js",
-    "revision": "7606ae0cb2ebc8d356c982a5d126f1fe"
+    "url": "/_nuxt/4f0be0f35ec60377ca6c.js",
+    "revision": "a74169bc31b37138801b8e37b4463847"
   },
   {
-    "url": "/_nuxt/5da12672103c84d1d574.js",
-    "revision": "53183b2e6751390d9a539896ffe98f0e"
+    "url": "/_nuxt/6169dc61fd31e9c1b73c.js",
+    "revision": "7bd157c44c26dc8d787ae6a6bfd4f4f0"
   },
   {
-    "url": "/_nuxt/c9e159150bbe73479fd7.js",
-    "revision": "a036e78e7cc97bd1ee2adc2f72570ca3"
+    "url": "/_nuxt/67bef6cbf95143792b40.js",
+    "revision": "f6d80bf83f47346c17290abdad07be42"
   },
   {
-    "url": "/_nuxt/ceaeec2b6359aa27d3aa.js",
-    "revision": "49be0082dba548f1b2a8fc5f304b5090"
+    "url": "/_nuxt/b7338a980f9fef2ac734.js",
+    "revision": "b0b83d5ce1435db6869c4f43f73c66ed"
   },
   {
-    "url": "/_nuxt/f8732253573278996d2b.js",
-    "revision": "c12376f5f84df27b1c223c0ca14fef05"
+    "url": "/_nuxt/e80feda5bb6d81c3314d.js",
+    "revision": "1a2e30d048a9e563a290714242529a17"
   }
 ], {
   "cacheId": "tokyo-olym.pics",
