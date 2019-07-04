@@ -70,6 +70,7 @@ import {
 	Vector,
 	World,
 } from 'matter-js';
+import {minBy} from 'lodash';
 import assert from 'assert';
 
 const baseSize = 450 * Math.sin(Math.PI / 24) * 2 / (Math.sqrt(3) + 2 + Math.sqrt(2) + Math.sqrt(6)) * 2;
@@ -346,8 +347,12 @@ export default {
 			}
 			this.constraintCandidates = [];
 		},
-		onClickBody(body) {
-			if (!body.isStatic) {
+		removeBody(body, byClick = false) {
+			if (!this.pieces.has(body)) {
+				return;
+			}
+
+			if (byClick && !body.isStatic) {
 				return;
 			}
 
@@ -373,15 +378,38 @@ export default {
 			});
 
 			this.pieces.delete(body);
+			const pieceRemovals = [];
 
 			for (const piece of this.pieces) {
 				const vertices = this.constrainedVertices.get(piece.id);
 				if (piece.isStatic && vertices.size <= 1) {
 					Body.setStatic(piece, false);
-				} else if (!piece.isStatic && vertices.size <= 1) {
-					Body.setStatic(piece, false);
+					const pieceRemoval = minBy(Array.from(this.pieces), (candidatePiece) => {
+						if (candidatePiece.label !== piece.label) {
+							return Infinity;
+						}
+						if (pieceRemovals.some((removal) => removal.id === candidatePiece.id)) {
+							return Infinity;
+						}
+						const candidateVertices = this.constrainedVertices.get(candidatePiece.id);
+						if (candidateVertices) {
+							return candidateVertices.size;
+						}
+						return 0;
+					});
+					if (pieceRemoval) {
+						console.log(pieceRemoval.id);
+						pieceRemovals.push(pieceRemoval);
+					}
 				}
 			}
+
+			for (const removal of pieceRemovals) {
+				this.removeBody(removal);
+			}
+		},
+		onClickBody(body) {
+			this.removeBody(body, true);
 		},
 	},
 };

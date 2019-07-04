@@ -20,6 +20,7 @@
   "dependencies": {
     "@nuxtjs/bulma": "^1.2.1",
     "@nuxtjs/pwa": "^2.6.0",
+    "lodash": "^4.17.11",
     "matter-js": "^0.14.2",
     "nuxt": "^2.0.0"
   },
