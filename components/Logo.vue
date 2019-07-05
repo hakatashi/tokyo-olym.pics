@@ -225,6 +225,7 @@ export default {
 					pieceTypes[i % 3].height,
 					{
 						label: i % 3,
+						angle: Math.random() * Math.PI * 2,
 					},
 				)
 			));
@@ -317,6 +318,7 @@ export default {
 					pieceTypes[newPiece].height,
 					{
 						label: newPiece,
+						angle: Math.random() * Math.PI * 2,
 					},
 				);
 				World.add(this.engine.world, piece);
