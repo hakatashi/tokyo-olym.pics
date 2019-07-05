@@ -1,5 +1,5 @@
 <template>
-	<div ref="wrap" class="wrap">
+	<div class="wrap">
 		<svg class="Logo" viewBox="0 0 1000 1000">
 			<g class="pins">
 				<circle
@@ -44,6 +44,7 @@
 				/>
 			</transition-group>
 		</svg>
+		<div ref="clickArea" class="click-area"/>
 		<div class="overlay">
 			<h1 class="main-title">tokyo-olym.pics</h1>
 			<p class="links">
@@ -182,7 +183,7 @@ export default {
 		const leftWall = Bodies.rectangle(-250, 500, 500, 1000, {isStatic: true});
 		World.add(this.engine.world, [...pieces, ground, ceil, leftWall, rightWall]);
 
-		this.mouse = Mouse.create(this.$refs.wrap);
+		this.mouse = Mouse.create(this.$refs.clickArea);
 		this.mouseConstraint = MouseConstraint.create(this.engine, {
 			mouse: this.mouse,
 			constraint: {
@@ -532,6 +533,14 @@ export default {
 @keyframes show {
 	from { opacity: 0; }
 	to { opacity: 1; }
+}
+
+.click-area {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
 }
 
 .overlay {
