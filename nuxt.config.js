@@ -1,48 +1,28 @@
 export default {
 	mode: 'universal',
 
-	/*
-   ** Headers of the page
-   */
 	head: {
-		title: process.env.npm_package_name || '',
+		htmlAttrs: {
+			prefix: 'og: http://ogp.me/ns#',
+		},
+		title: 'Tokyo-Olym.pics',
 		meta: [
 			{charset: 'utf-8'},
 			{name: 'viewport', content: 'width=device-width, initial-scale=1'},
-			{
-				hid: 'description',
-				name: 'description',
-				content: process.env.npm_package_description || '',
-			},
 		],
-		link: [{rel: 'icon', type: 'image/png', href: '/favicon.png'}],
+		link: [{rel: 'icon', type: 'image/png', href: '/icon.png'}],
 	},
 
-	/*
-   ** Customize the progress-bar color
-   */
 	loading: {color: '#fff'},
 
-	/*
-   ** Global CSS
-   */
 	css: [],
 
-	/*
-   ** Plugins to load before mounting the App
-   */
 	plugins: [],
 
-	/*
-   ** Nuxt.js modules
-   */
 	modules: [
 		'@nuxtjs/pwa',
 	],
 
-	/*
-   ** Build configuration
-   */
 	build: {
 		postcss: {
 			preset: {
@@ -54,7 +34,16 @@ export default {
 		optimizeCSS: false,
 		html: {
 			minify: {
+				collapseBooleanAttributes: true,
+				collapseWhitespace: true,
+				decodeEntities: true,
 				minifyCSS: false,
+				minifyJS: true,
+				processConditionalComments: true,
+				removeEmptyAttributes: true,
+				removeRedundantAttributes: true,
+				trimCustomFragments: true,
+				useShortDoctype: true,
 			},
 		},
 	},
