@@ -1,50 +1,52 @@
 <template>
 	<div class="wrap">
-		<svg class="Logo" viewBox="0 0 1000 1000">
-			<g class="pins">
-				<circle
-					v-for="(pin, i) in pins"
-					:key="i"
-					class="pin"
-					:r="(alwaysShowPins || pinConstraints[i].length === 0) ? 5 : 0"
-					fill="#001f62"
-					:cx="pin.x"
-					:cy="pin.y"
-				/>
-			</g>
-			<g class="bodies">
-				<g
-					v-for="body in bodies"
-					:key="body.id"
-					class="body"
-					@click="onClickBody(body)"
-				>
-					<polygon
-						:points="body.vertices.map(({x, y}) => `${x},${y}`).join(' ')"
+		<div ref="wrap" class="svg-wrap">
+			<svg class="Logo" viewBox="0 0 1000 1000">
+				<g class="pins">
+					<circle
+						v-for="(pin, i) in pins"
+						:key="i"
+						class="pin"
+						:r="(alwaysShowPins || pinConstraints[i].length === 0) ? 5 : 0"
 						fill="#001f62"
-					/>
-					<path
-						v-if="body.isStatic"
-						d="M0-8A8,8,0,0,0-8,0,8,8,0,0,0,0,8,8,8,0,0,0,8,0,8,8,0,0,0,0-8ZM4.53,3,3,4.53l-3-3-3,3L-4.53,3l3-3-3-3L-3-4.53l3,3,3-3L4.53-3l-3,3Z"
-						fill="white"
-						class="remove"
-						:transform="`translate(${body.position.x}, ${body.position.y})`"
+						:cx="pin.x"
+						:cy="pin.y"
 					/>
 				</g>
-			</g>
-			<transition-group name="pin-constraint" tag="g">
-				<circle
-					v-for="constraint in constraintCandidates"
-					:key="[constraint.position.x, constraint.position.y].join(',')"
-					class="pin-constraint"
-					fill="white"
-					stroke="#001f62"
-					:cx="constraint.position.x"
-					:cy="constraint.position.y"
-				/>
-			</transition-group>
-		</svg>
-		<div ref="clickArea" class="click-area"/>
+				<g class="bodies">
+					<g
+						v-for="body in bodies"
+						:key="body.id"
+						class="body"
+						@click="onClickBody(body)"
+						@touchend="onClickBody(body)"
+					>
+						<polygon
+							:points="body.vertices.map(({x, y}) => `${x},${y}`).join(' ')"
+							fill="#001f62"
+						/>
+						<path
+							v-if="body.isStatic"
+							d="M0-8A8,8,0,0,0-8,0,8,8,0,0,0,0,8,8,8,0,0,0,8,0,8,8,0,0,0,0-8ZM4.53,3,3,4.53l-3-3-3,3L-4.53,3l3-3-3-3L-3-4.53l3,3,3-3L4.53-3l-3,3Z"
+							fill="white"
+							class="remove"
+							:transform="`translate(${body.position.x}, ${body.position.y})`"
+						/>
+					</g>
+				</g>
+				<transition-group name="pin-constraint" tag="g">
+					<circle
+						v-for="constraint in constraintCandidates"
+						:key="[constraint.position.x, constraint.position.y].join(',')"
+						class="pin-constraint"
+						fill="white"
+						stroke="#001f62"
+						:cx="constraint.position.x"
+						:cy="constraint.position.y"
+					/>
+				</transition-group>
+			</svg>
+		</div>
 		<div class="overlay">
 			<h1 class="main-title">tokyo-olym.pics</h1>
 			<p class="links">
@@ -183,7 +185,8 @@ export default {
 		const leftWall = Bodies.rectangle(-250, 500, 500, 1000, {isStatic: true});
 		World.add(this.engine.world, [...pieces, ground, ceil, leftWall, rightWall]);
 
-		this.mouse = Mouse.create(this.$refs.clickArea);
+		this.mouse = Mouse.create(this.$refs.wrap);
+		console.log(this.$refs.wrap);
 		this.mouseConstraint = MouseConstraint.create(this.engine, {
 			mouse: this.mouse,
 			constraint: {
@@ -481,7 +484,7 @@ export default {
 </script>
 
 <style>
-.wrap, .Logo {
+.wrap, .svg-wrap, .Logo {
 	width: 100vmin;
 	height: 100vmin;
 	font-family: 'Quicksand', 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -533,14 +536,6 @@ export default {
 @keyframes show {
 	from { opacity: 0; }
 	to { opacity: 1; }
-}
-
-.click-area {
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
 }
 
 .overlay {
