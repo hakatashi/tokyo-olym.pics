@@ -463,7 +463,6 @@ export default {
 						return 0;
 					});
 					if (pieceRemoval) {
-						console.log(pieceRemoval.id);
 						pieceRemovals.push(pieceRemoval);
 					}
 				}
