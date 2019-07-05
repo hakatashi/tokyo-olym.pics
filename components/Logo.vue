@@ -1,6 +1,12 @@
 <template>
 	<div class="wrap">
-		<div ref="wrap" class="svg-wrap">
+		<div
+			ref="wrap"
+			class="svg-wrap"
+			:style="{
+				pointerEvents: isResetting ? 'none' : 'all',
+			}"
+		>
 			<svg class="Logo" viewBox="0 0 1000 1000">
 				<g class="pins">
 					<circle
@@ -57,6 +63,9 @@
 					target="_blank"
 					rel="nofollow"
 				>GitHub</a>
+			</p>
+			<p class="buttons">
+				<button class="button" @click="resetLogo">Reset</button>
 			</p>
 		</div>
 		<div class="modal-wrap" @click="isModal = false">
@@ -143,6 +152,7 @@ export default {
 			constraintCandidates: [],
 			constraints: [],
 			isModal: false,
+			isResetting: false,
 			alwaysShowPins: true,
 		};
 	},
@@ -168,25 +178,7 @@ export default {
 
 		this.engine = Engine.create();
 
-		const pieces = Array(6).fill().map((...[, i]) => (
-			Bodies.rectangle(
-				i === 0 ? this.pins[14].x : Math.random() * 800 + 100,
-				i === 0 ? this.pins[14].y : Math.random() * 500 + 200,
-				pieceTypes[i % 3].width,
-				pieceTypes[i % 3].height,
-				{
-					label: i % 3,
-				},
-			)
-		));
-		const ground = Bodies.rectangle(500, 1250, 2000, 500, {isStatic: true});
-		const ceil = Bodies.rectangle(500, -250, 2000, 500, {isStatic: true});
-		const rightWall = Bodies.rectangle(1250, 500, 500, 1000, {isStatic: true});
-		const leftWall = Bodies.rectangle(-250, 500, 500, 1000, {isStatic: true});
-		World.add(this.engine.world, [...pieces, ground, ceil, leftWall, rightWall]);
-
 		this.mouse = Mouse.create(this.$refs.wrap);
-		console.log(this.$refs.wrap);
 		this.mouseConstraint = MouseConstraint.create(this.engine, {
 			mouse: this.mouse,
 			constraint: {
@@ -199,8 +191,7 @@ export default {
 		Events.on(this.mouseConstraint, 'enddrag', this.onEndDrag);
 		World.add(this.engine.world, this.mouseConstraint);
 
-		this.constrainedVertices = new Map();
-		this.pieces = new Set(pieces);
+		const initialPieces = this.initializePieces();
 
 		this.addConstraint(
 			{
@@ -209,7 +200,7 @@ export default {
 			},
 			{
 				type: 'body',
-				body: pieces[0],
+				body: initialPieces[0],
 				vertixIndex: 0,
 			},
 		);
@@ -225,6 +216,31 @@ export default {
 		window.removeEventListener('resize', this.onWindowResize);
 	},
 	methods: {
+		initializePieces() {
+			const pieces = Array(6).fill().map((...[, i]) => (
+				Bodies.rectangle(
+					i === 0 ? this.pins[14].x : Math.random() * 800 + 100,
+					i === 0 ? this.pins[14].y : Math.random() * 500 + 200,
+					pieceTypes[i % 3].width,
+					pieceTypes[i % 3].height,
+					{
+						label: i % 3,
+					},
+				)
+			));
+			const ground = Bodies.rectangle(500, 1250, 2000, 500, {isStatic: true});
+			const ceil = Bodies.rectangle(500, -250, 2000, 500, {isStatic: true});
+			const rightWall = Bodies.rectangle(1250, 500, 500, 1000, {isStatic: true});
+			const leftWall = Bodies.rectangle(-250, 500, 500, 1000, {isStatic: true});
+			World.add(this.engine.world, [...pieces, ground, ceil, leftWall, rightWall]);
+
+			this.walls = [ground, ceil, leftWall, rightWall];
+
+			this.constrainedVertices = new Map();
+			this.pieces = new Set(pieces);
+
+			return pieces;
+		},
 		addConstraint(bodyA, bodyB) {
 			if (bodyA.type === 'pin') {
 				assert(bodyB.type === 'body');
@@ -479,6 +495,42 @@ export default {
 		onClickBody(body) {
 			this.removeBody(body, true);
 		},
+		async resetLogo() {
+			if (this.isResetting) {
+				return;
+			}
+
+			this.isResetting = true;
+
+			World.remove(this.engine.world, [
+				...this.walls,
+				...this.constraints.map(({constraint}) => constraint),
+			]);
+
+			for (const piece of this.pieces) {
+				if (piece.isStatic) {
+					Body.setStatic(piece, false);
+					Body.applyForce(piece, {
+						x: piece.position.x,
+						y: piece.position.y,
+					}, {
+						x: (Math.random() - 0.5) / 10,
+						y: 0,
+					});
+				}
+			}
+
+			this.constraints.splice(0);
+
+			await new Promise((resolve) => {
+				setTimeout(resolve, 3000);
+			});
+
+			World.remove(this.engine.world, Array.from(this.pieces));
+
+			this.initializePieces();
+			this.isResetting = false;
+		},
 	},
 };
 </script>
@@ -586,6 +638,28 @@ export default {
 	color: #001f62;
 	font-weight: bold;
 	font-size: 1rem;
+	opacity: 0.7;
+
+	pointer-events: initial;
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.buttons {
+	animation: bring-up 1.5s 3s cubic-bezier(.16, .5, .5, 1) both;
+}
+
+.button {
+	margin-top: 0.5rem;
+	padding: 0.3rem 0.7rem;
+	outline: none;
+	border: none;
+	border-radius: 5px;
+
+	color: white;
+	background-color: #001f62;
+	font-weight: bold;
+	font-size: 0.9rem;
 	opacity: 0.7;
 
 	pointer-events: initial;
